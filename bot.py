@@ -80,7 +80,7 @@ def check_eat():
 
 def frick(change):
     global fr
-    t.sleep(0.1)
+    t.sleep(0.25)
     print('frick {:+}'.format(change))
     for i in range(abs(change)):
         pg.scroll(change//abs(change))
@@ -91,8 +91,7 @@ def fish():
     #1625 980
     kb.send('r')
     t.sleep(0.25)
-    _ = pg.locateOnScreen('images/fish.png', confidence = 0.85)
-    if _ != None:
+    if pg.locateOnScreen('images/fish.png', confidence = 0.85) != None:
         return True
     return False
 
@@ -151,11 +150,9 @@ def qit():
 
 def zatsep():
     try:
-        if pg.pixel(1305,1037)[0] >= 195:
-            t.sleep(0.35)
-            if pg.pixel(1305,1037)[0] >= 195:
-                print('zatsep')
-                return True
+        if pg.pixel(1305,1037)[0] >= 200 and pg.locateOnScreen('images/zatsep.png', confidence = 0.85) != None:
+            print('zatsep')
+            return True
     except:
         return zatsep()
     return False
