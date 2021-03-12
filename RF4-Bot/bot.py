@@ -193,9 +193,13 @@ try:
 except:
     pg.alert('Вы ввели не число, скорость установлена на 40')
 
-mods = {"Твитчинг" : "twitching",
-        "Джиговая ступенька" : 'djiging'}
-mode = mods[pg.confirm(text='Какой тип проводки?', title='Тип', buttons=['Твитчинг', 'Джиговая ступенька'])]
+try:
+    mods = {"Твитчинг" : "twitching",
+    "Джиговая ступенька" : 'djiging'}
+    mode = mods[pg.confirm(text='Какой тип проводки?', title='Тип', buttons=['Твитчинг', 'Джиговая ступенька'])]
+except:
+    pg.alert('Ошибка, тип проводки установлен на твитчинг')
+    mode = 'twitching'
 
 for char in 'starting...':
     print(char, end = '', flush = True)
