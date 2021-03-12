@@ -101,11 +101,11 @@ def normalize_frick():
     #1300 1050
     #1175 1050
     try:
-        if pg.pixel(1350,1050)[0]>=175 and pg.pixel(566,1050)[0]>=175:
+        if pg.pixel(1300,1050)[0]>=175 and pg.pixel(616,1050)[0]>=175:
             #print('to a lot')
             frick(-1)
 
-        elif sum(pg.pixel(1300,1050)[:2])/2<=155 and sum(pg.pixel(616,1050)[:2])/2<=155:
+        elif sum(pg.pixel(1250,1050)[:2])/2<=155 and sum(pg.pixel(666,1050)[:2])/2<=155:
             #print('a few')
             if fr + 1<30:
                 frick(1)
