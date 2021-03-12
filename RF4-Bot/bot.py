@@ -80,12 +80,12 @@ def check_eat():
 
 def frick(change):
     global fr
-    t.sleep(0.15)
+    t.sleep(0.1)
     prind('frick {:+}'.format(change))
     for i in range(abs(change)):
         pg.scroll(change//abs(change))
         fr += (change//abs(change))
-        t.sleep(0.2)
+        t.sleep(0.1)
 
 def fish():
     #1625 980
@@ -111,6 +111,13 @@ def normalize_frick():
                 frick(1)
     except:
         normalize_frick()
+
+def set_frick(value):
+    global fr
+    fr = -10
+    frick(30)
+    frick(value-30)
+    fr = value
 
 def set_speed(value):
     kb.press('r')
@@ -206,12 +213,9 @@ for char in 'starting...':
     t.sleep(0.1)
 
 t.sleep(5)
-fr = 25
 bind_tea()
 t.sleep(1.5)
 set_speed(speed)
-frick(-30)
-frick(24)
 
 checking = td.Thread(target = danger, name='checking_danger')
 checking.start()
@@ -220,7 +224,6 @@ print("\nstarted succesfull")
 
 is_eat = True
 energy = True
-fr = 25
 
 time1 = t.time()
 
@@ -241,7 +244,7 @@ while energy:
 
     if is_ready():
         #vkid
-        frick(25 - fr)
+        set_frick(25)
         t.sleep(0.5)
         prind('loop at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
         prind('vkid at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
