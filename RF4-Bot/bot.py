@@ -11,19 +11,19 @@ import threading as td
 
 def danger():
     try:
-        if sum(pg.pixel(1235,1025)[:2])//2 >= 195 and not done():
+        if pg.pixel(1235,1025)[0] >= 190 and not done():
             t.sleep(0.5)
-            if sum(pg.pixel(1235,1025)[:2])//2 >= 195 and not done():
+            if pg.pixel(1235,1025)[0] >= 190 and not done():
                 print(pg.pixel(1235,1023))
                 ext()
-        if sum(pg.pixel(1370,1025)[:2])//2 >= 195 and not done():
+        if pg.pixel(1370,1025)[0] >= 190 and not done():
             t.sleep(0.5)
-            if sum(pg.pixel(1370,1025)[:2])//2 >= 195 and not done():
+            if pg.pixel(1370,1025)[0] >= 190 and not done():
                 print(pg.pixel(1369,1023))
                 ext()
-        if sum(pg.pixel(1270,1025)[:2])//2 >= 195 and not done():
+        if pg.pixel(1270,1025)[0] >= 190 and not done():
             t.sleep(0.5)
-            if sum(pg.pixel(1270,1025)[:2])//2 >= 195 and not done():
+            if pg.pixel(1270,1025)[0] >= 190 and not done():
                 print(pg.pixel(1270,1023))
                 ext()
     except:
