@@ -198,7 +198,14 @@ else:
 try:
     speed = int(pg.prompt(text='Какая скорость промотки?', title='Скорость', default=40))
 except:
+    speed = 40
     pg.alert('Вы ввели не число, скорость установлена на 40')
+
+try:
+    def_fr = int(pg.prompt(text='Какой стандартный фрикцион?', title='Фрикцион', default=25))
+except:
+    def_fr = 25
+    pg.alert('Вы ввели не число, стандартный фрикцион установлен на 25')
 
 try:
     mods = {"Твитчинг" : "twitching",
@@ -244,7 +251,7 @@ while energy:
 
     if is_ready():
         #vkid
-        set_frick(25)
+        set_frick(def_fr)
         t.sleep(0.5)
         prind('loop at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
         prind('vkid at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
