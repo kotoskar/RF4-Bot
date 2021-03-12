@@ -80,8 +80,8 @@ def check_eat():
 
 def frick(change):
     global fr
-    t.sleep(0.25)
-    print('frick {:+}'.format(change))
+    t.sleep(0.15)
+    prind('frick {:+}'.format(change))
     for i in range(abs(change)):
         pg.scroll(change//abs(change))
         fr += (change//abs(change))
@@ -165,9 +165,18 @@ def full():
         return full()
     return False
 
+def prind(value):
+    print(value)
+    log.write(value)
+
 #STARTING
 
 kb.add_hotkey('alt+l', qit)
+
+if 'logs' not in os.listdir(path = '.'):
+    os.system('mkdir logs')
+
+log = open('logs/log_{}.txt'.format(t.ctime().replace(':', '-')), 'w')
 
 timer = pg.prompt(text='Через сколько времени выключить бота и игру?', title='Таймер', default=None)
 if timer != None and timer != '':
@@ -188,7 +197,7 @@ for char in 'starting...':
     t.sleep(0.1)
 
 t.sleep(5)
-
+fr = 25
 bind_tea()
 t.sleep(1.5)
 set_speed(speed)
@@ -197,6 +206,7 @@ frick(24)
 
 checking = td.Thread(target = danger, name='checking_danger')
 checking.start()
+
 print("\nstarted succesfull")
 
 is_eat = True
@@ -216,15 +226,16 @@ while energy:
         pass
 
     if full():
-        print('full at time after start: H:{} M:{} S:{}'.format((t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
+        prind('full at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
         os.system('taskkill /F /IM rf4_x64.exe')
         exit()
 
     if is_ready():
         #vkid
         frick(25 - fr)
-        print('loop at time after start: H:{} M:{} S:{}'.format((t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
-        print('vkid at time after start: H:{} M:{} S:{}'.format((t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
+        t.sleep(0.5)
+        prind('loop at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
+        prind('vkid at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
         while check_eat():
             eat()
             t.sleep(0.25)
@@ -237,7 +248,7 @@ while energy:
 
     while not is_ready() and not fish() and not done():
         #twitching
-        print('{} at time after start: H:{} M:{} S:{}'.format(mode, (t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
+        prind('{} at time after start: H:{} M:{} S:{}'.format(mode, int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
         if mode == 'Твитчинг':
             kb.press('shift')
             pg.mouseDown()
@@ -268,16 +279,9 @@ while energy:
         if is_ready():
             continue
 
-        while zatsep():
-            pg.mouseDown()
-            pg.click(button='right')
-            t.sleep(0.5)
-        else:
-            pg.mouseUp()
-
         if fish():
             #fishing
-            print('fishing at time after start: H:{} M:{} S:{}'.format((t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
+            prind('fishing at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
             pg.mouseDown()
             pg.mouseDown(button = 'right')
             while not done() and not is_ready():
@@ -297,7 +301,7 @@ while energy:
             pg.mouseUp()
             while done():
                 #accepting
-                print('accepting at time after start: H:{} M:{} S:{}'.format((t.time()-time1)//3600, (t.time()-time1)//60, round((t.time()-time1)%60,1)))
+                prind('accepting at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
                 kb.send(' ')
                 t.sleep(1)
 else:
