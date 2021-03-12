@@ -1,3 +1,2 @@
 import os
-os.system('rd RF4-Bot /s /Q')
 os.system('git clone https://github.com/kotoskar/RF4-Bot.git')
