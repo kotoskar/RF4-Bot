@@ -139,11 +139,13 @@ def eat():
         is_eat = False
 
 def ext():
+    log.close()
     print('turning off...')
     os.system('taskkill /F /IM rf4_x64.exe')
     exit()
 
 def qit():
+    log.close()
     print('turning off...')
     os.system('taskkill /F /IM python.exe')
     exit()
@@ -166,8 +168,9 @@ def full():
     return False
 
 def prind(value):
+    global log
     print(value)
-    log.write(value)
+    log.write(value + '\n')
 
 #STARTING
 
@@ -190,7 +193,9 @@ try:
 except:
     pg.alert('Вы ввели не число, скорость установлена на 40')
 
-mode = pg.confirm(text='Какой тип проводки?', title='Тип', buttons=['Твитчинг', 'Джиговая ступенька'])
+mods = {"Твитчинг" : "twitching",
+        "Джиговая ступенька" : 'djiging'}
+mode = mods[pg.confirm(text='Какой тип проводки?', title='Тип', buttons=['Твитчинг', 'Джиговая ступенька'])]
 
 for char in 'starting...':
     print(char, end = '', flush = True)
@@ -249,7 +254,7 @@ while energy:
     while not is_ready() and not fish() and not done():
         #twitching
         prind('{} at time after start: H:{} M:{} S:{}'.format(mode, int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
-        if mode == 'Твитчинг':
+        if mode == 'twitching':
             kb.press('shift')
             pg.mouseDown()
             t.sleep(0.5)
@@ -263,7 +268,7 @@ while energy:
             pg.mouseUp()
             kb.release('shift')
             t.sleep(0.25)
-        if mode == 'Джиговая ступенька':
+        if mode == 'djiging':
             pg.mouseDown()
             t.sleep(2)
             while zatsep():
