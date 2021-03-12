@@ -101,7 +101,7 @@ def normalize_frick():
     #1300 1050
     #1175 1050
     try:
-        if pg.pixel(1350,1050)[1]>=155 and pg.pixel(566,1050)[1]>=155:
+        if pg.pixel(1350,1050)[0]>=175 and pg.pixel(566,1050)[0]>=175:
             #print('to a lot')
             frick(-1)
 
