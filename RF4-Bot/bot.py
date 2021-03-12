@@ -80,12 +80,12 @@ def check_eat():
 
 def frick(change):
     global fr
-    t.sleep(0.1)
+    t.sleep(0.05)
     prind('frick {:+}'.format(change))
     for i in range(abs(change)):
         pg.scroll(change//abs(change))
         fr += (change//abs(change))
-        t.sleep(0.1)
+        t.sleep(0.5)
 
 def fish():
     #1625 980
