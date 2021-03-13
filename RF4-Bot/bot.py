@@ -294,7 +294,7 @@ while energy:
                 pg.mouseUp()
             pg.mouseUp()
             kb.release('shift')
-            t.sleep(0.25)
+            t.sleep(0.75)
         if mode == 'djiging':
             pg.mouseDown()
             t.sleep(2)
