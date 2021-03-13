@@ -34,21 +34,26 @@ def danger():
 def bind_tea():
     kb.press('t')
     t.sleep(2)
-    tea_location = pg.locateCenterOnScreen('images/tea.png', confidence = 0.75)
-    if tea_location != None:
-        pg.moveTo(tea_location)
-        pg.dragTo(200, 850, 1)
-    else:
-        print('no tea found(')
+    try:
+        tea_location = pg.locateCenterOnScreen('images/tea.png', confidence = 0.75)
+        if tea_location != None:
+            pg.moveTo(tea_location)
+            pg.dragTo(200, 850, 1)
+        else:
+            print('no tea found(')
+    except:
+        return bind_tea()
     t.sleep(0.75)
     kb.release('t')
 
 def is_ready():
-    _ = pg.locateOnScreen('images/is_ready.png', confidence = 0.7)
-    if _ != None:
-        return True
-    else:
-        return False
+    try:
+        if pg.locateOnScreen('images/is_ready.png', confidence = 0.7) != None:
+            return True
+        else:
+            return False
+    except:
+        return is_ready()
 
 def check_energy():
     #locate 280 955
@@ -85,15 +90,18 @@ def frick(change):
     for i in range(abs(change)):
         pg.scroll(change//abs(change))
         fr += (change//abs(change))
-        t.sleep(0.5)
+        t.sleep(0.05)
 
 def fish():
     #1625 980
     kb.send('r')
-    t.sleep(0.25)
-    if pg.locateOnScreen('images/fish.png', confidence = 0.85) != None:
-        return True
-    return False
+    t.sleep(0.1)
+    try:
+        if pg.locateOnScreen('images/fish.png', confidence = 0.85) != None:
+            return True
+        return False
+    except:
+        return fish()
 
 def normalize_frick():
     global fr
@@ -133,17 +141,22 @@ def set_speed(value):
     kb.release('r')
 
 def done():
-    _ = pg.locateOnScreen('images/done.png', confidence = 0.65)
-    if _ != None:
-        return True
-    return False
+    try:
+        if pg.locateOnScreen('images/done.png', confidence = 0.65) != None:
+            return True
+        return False
+    except:
+        return done()
 
 def eat():
     global is_eat
     if is_eat:
         pg.press('5')
-    if pg.locateOnScreen('images/eatover.png', confidence = 0.85) != None:
-        is_eat = False
+    try:
+        if pg.locateOnScreen('images/eatover.png', confidence = 0.85) != None:
+            is_eat = False
+    except:
+        return eat()
 
 def ext():
     log.close()
