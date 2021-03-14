@@ -15,16 +15,19 @@ def danger():
             t.sleep(0.5)
             if pg.pixel(1235,1025)[0] >= 190 and not done():
                 print(pg.pixel(1235,1023))
+                prind('-leska at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
                 ext()
         if pg.pixel(1370,1025)[0] >= 190 and not done():
             t.sleep(0.5)
             if pg.pixel(1370,1025)[0] >= 190 and not done():
                 print(pg.pixel(1369,1023))
+                prind('HOT! at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
                 ext()
         if pg.pixel(1270,1025)[0] >= 190 and not done():
             t.sleep(0.5)
             if pg.pixel(1270,1025)[0] >= 190 and not done():
                 print(pg.pixel(1270,1023))
+                prind('Хрясь at time after start: H:{} M:{} S:{}'.format(int((t.time()-time1)//3600), int((t.time()-time1)//60), round((t.time()-time1)%60,1)))
                 ext()
     except:
         return danger()
