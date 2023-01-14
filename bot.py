@@ -1,4 +1,4 @@
-from config import *
+from cfg import *
 import os
 
 try:
@@ -10,21 +10,18 @@ try:
     import telebot as tb
     from telebot import types
 except ImportError:
-    print("installing packages...")
-    os.system('pip install pyautogui')
-    os.system('pip install keyboard')
-    os.system('pip install pillow')
-    os.system('pip install opencv-python')
-    os.system('pip install pytelegrambotapi')
-    import pyautogui as pg
-    import time as t
-    import keyboard as kb
-    import datetime as dt
-    import threading as td
-    import telebot as tb
-    from telebot import types
+    print('Не установлены необходимые библиотеки')
+    print('Запустите setup.py')
+    input('Нажмите Enter для выхода...')
+    exit()
 
-bot = tb.TeleBot('1872570952:AAF9_0j2UFFk6W3fGvK9wo2Bn8Tt__qeaiQ')
+# BOT1 = '1872570952:AAF9_0j2UFFk6W3fGvK9wo2Bn8Tt__qeaiQ'
+# https://t.me/RF4FishingBot
+# BOT2 = '5397438580:AAFgCAv34MSNw7zIZDYFAUvxHccm09LhXF4'
+# https://t.me/RF4Fishing_Bot
+BOT_API_KEY = '5397438580:AAFgCAv34MSNw7zIZDYFAUvxHccm09LhXF4'
+
+bot = tb.TeleBot(BOT_API_KEY)
 
 
 def send_screenshot():
@@ -60,6 +57,8 @@ def get_text_messages(message):
                     pg.keyUp(btn)
                 case 'выполни', *words:
                     exec(''.join(words))
+                case 'help', *words:
+                    bot.send_message(id, 'садок\nскрин\nвыход\nнажми\nзажми\nотпусти\nвыполни')
                 case _:
                     bot.send_message(id, 'привет ^_^')
             first = False
@@ -116,10 +115,10 @@ def is_fish():
 def normalize_friction():
     global last_friction_up
     try:
-        while pg.pixel(1348, 1050)[0] >= 175 and pg.pixel(569, 1050)[0] >= 175:
+        while pg.pixel(1320, 1050)[0] >= 175 and pg.pixel(597, 1050)[0] >= 175:
             change_friction(-1)
-        if sum(pg.pixel(1286, 1050)[:2]) / 2 <= 155 and sum(pg.pixel(630, 1050)[:2]) / 2 <= 155:
-            if friction + 1 < 30 and t.time() - last_friction_up > 3:
+        if sum(pg.pixel(1266, 1050)[:2]) / 2 <= 155 and sum(pg.pixel(650, 1050)[:2]) / 2 <= 155:
+            if friction + 1 < max_friction and t.time() - last_friction_up > 5:
                 change_friction(1)
                 last_friction_up = t.time()
     except Exception as ex:
@@ -209,13 +208,13 @@ def close_game():
 def close_bot():
     locker.acquire()
     print_and_log('Выключение бота...')
+    log.close()
     if id is not None:
         bot.send_message(id, 'Выключение бота...')
         try:
             bot.send_document(id, open(log_path, 'rb'))
         except Exception as ex:
             bot.send_message(id, "Не удалось отправить лог:\n" + str(ex))
-    log.close()
     os.system('taskkill /F /IM python.exe')
     exit()
 
@@ -268,9 +267,11 @@ kb.add_hotkey(EXIT_HOTKEY, close_bot)
 
 # LOGS
 path = os.path.dirname(os.path.abspath(__file__))
+print('cd ' + path)
+print('python bot.py')
 if 'logs' not in os.listdir(path=path):
-    os.mkdir(path + '/logs')
-log_path = 'logs/log_{}.txt'.format('-'.join(t.ctime().replace(':', '-').split()[-2:]))
+    os.mkdir('/logs')
+log_path = path + '/logs/log_{}.txt'.format('-'.join(t.ctime().replace(':', '-').split()[-2:]))
 log = open(log_path, 'w')
 
 # EXIT TIMER
@@ -283,6 +284,7 @@ else:
 
 speed = int(pg.prompt(text='Какая скорость промотки?', title='Скорость', default=50))
 def_fr = int(pg.prompt(text='Какой стандартный фрикцион?', title='Фрикцион', default=25))
+max_friction = int(pg.prompt(text='Какой предельный фрикцион?', title='Фрикцион', default=30))
 mode = pg.confirm(text='Какой тип проводки?', title='Тип проводки',
                   buttons=['Твичинг', 'Джиговая ступенька', 'Рыскание', 'Пассивные Вэки', 'Равномерная'])
 
@@ -314,7 +316,7 @@ default_size = check_size()
 while energy:
     print_and_log('LOOP')
 
-    t.sleep(2)
+    t.sleep(0.5)
 
     pg.press('shift')
     pg.mouseUp(button='right')
@@ -340,7 +342,7 @@ while energy:
 
     pg.press('c', interval=0.1)
 
-    t.sleep(2.5)
+    t.sleep(1.5)
     if pg.locateOnScreen('images/sadok.png') is not None:
         if full():
             print_and_log('FULL')
@@ -363,11 +365,14 @@ while energy:
 
     if is_ready():
         set_friction(def_fr)
+        max_friction = 30
         t.sleep(0.25)
         print_and_log('THROWING')
+        pg.keyDown('shift')
         pg.mouseDown()
-        t.sleep(3)
+        t.sleep(1)
         pg.mouseUp()
+        pg.keyUp('shift')
         t.sleep(5)
     else:
         continue
@@ -405,14 +410,6 @@ while energy:
                 t.sleep(TIME_JUMPING)
                 pg.mouseUp()
 
-            case 'Пассивные Вэки':
-                if t.time() - time1 >= TIME_BETWEEN_SLIDE:
-                    pg.mouseDown()
-                    t.sleep(TIME_SLIDE)
-                    pg.mouseUp()
-                    pg.press("enter")
-                    time1 = t.time()
-
             case 'Равномерная':
                 if not is_pressed:
                     pg.mouseDown()
@@ -442,11 +439,13 @@ while energy:
                         close_game()
                 if hot():
                     print_and_log('HOT!')
+                    pg.mouseUp()
+                    t.sleep(0.2)
                     pg.keyDown('enter')
                     while hot():
                         t.sleep(0.1)
                     pg.keyUp('enter')
-                    pg.press('enter')
+                    pg.mouseDown()
                 if is_near():
                     pg.mouseDown(button='right')
                 else:
