@@ -100,7 +100,10 @@ def fish():
 
 
 def full_friction():
-    ...
+    try:
+        return sum(pg.pixel(955, 940)) / 3 >= 255
+    except Exception as ex:
+        return full_friction()
 
 
 def crash():
