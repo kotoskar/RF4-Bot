@@ -1,3 +1,6 @@
+# IMPORTS --------------------------------------------------------------------------------------------------------------
+import random
+
 from cfg import *
 import os
 
@@ -10,10 +13,19 @@ try:
     import telebot as tb
     from telebot import types
 except ImportError:
-    print('Не установлены необходимые библиотеки')
-    print('Запустите setup.py')
-    input('Нажмите Enter для выхода...')
-    exit()
+    from setup import setup
+
+    setup()
+
+    import pyautogui as pg
+    import time as t
+    import keyboard as kb
+    import datetime as dt
+    import threading as td
+    import telebot as tb
+    from telebot import types
+
+# GLOBALS --------------------------------------------------------------------------------------------------------------
 
 # BOT1 = '1872570952:AAF9_0j2UFFk6W3fGvK9wo2Bn8Tt__qeaiQ'
 # https://t.me/RF4FishingBot
@@ -23,12 +35,136 @@ BOT_API_KEY = '5397438580:AAFgCAv34MSNw7zIZDYFAUvxHccm09LhXF4'
 
 bot = tb.TeleBot(BOT_API_KEY)
 
+locker = td.Lock()
 
+starts_time = t.time()
+last_friction_change = starts_time
+alive = True
+check_fishes = False
+first_message = True
+friction = 25
+is_fish_now = False
+last_rise = starts_time
+
+try:
+    tg_id = int(TELEGRAM_ID)
+except ValueError:
+    pg.alert("Введите свой телеграм ID для дистанционного управления в файл 'settings.py'", title='Телеграм ID')
+    exit()
+
+timer = pg.prompt(text='Через сколько часов выключить бота и игру?', title='Таймер', default=None)
+if timer is not None and timer.isdigit():
+    timer = True
+    end_time = t.time() + float(timer) * 3600
+else:
+    timer = False
+
+speed = int(pg.prompt(text='Какая скорость промотки?', title='Скорость', default=50))
+default_friction = int(pg.prompt(text='Какой стандартный фрикцион?', title='Фрикцион', default=25))
+mode = pg.confirm(text='Какой тип проводки?', title='Тип проводки',
+                  buttons=['Твичинг', 'Джиговая ступенька', 'Рыскание', 'Равномерная'])
+
+
+# CHECKERS -------------------------------------------------------------------------------------------------------------
+def done():
+    try:
+        return pg.locateOnScreen('images/done.png', confidence=0.8) is not None
+    except Exception as ex:
+        return done()
+
+
+def ready():
+    try:
+        return pg.locateOnScreen('images/is_ready.png', confidence=0.8) is not None
+    except Exception as ex:
+        return ready()
+
+
+def need_energy():
+    try:
+        if pg.pixel(280, 955)[1] <= 115:
+            return True
+    except Exception as ex:
+        return need_energy()
+    else:
+        return False
+
+
+def fish():
+    pg.press('r')
+    t.sleep(0.25)
+    try:
+        return pg.locateOnScreen('images/fish.png', confidence=0.65) is not None
+    except Exception as ex:
+        return fish()
+
+
+def full_friction():
+    ...
+
+
+def crash():
+    try:
+        return pg.locateOnScreen('images/crash.png', confidence=0.8) is not None
+    except Exception as ex:
+        return crash()
+
+
+def near():
+    try:
+        return sum(pg.pixel(*default_size)) // 3 >= 155
+    except Exception as ex:
+        print(ex)
+        return near()
+
+
+def check_size():
+    sizes = [(1237, 1010), (1240, 1010), (1243, 1011), (1246, 1013), (1248, 1016), (1250, 1019), (1250, 1022),
+             (1250, 1025), (1249, 1028), (1248, 1031), (1246, 1033), (1244, 1035), (1241, 1036), (1238, 1036),
+             (1235, 1036), (1232, 1036), (1229, 1035), (1227, 1033), (1225, 1030), (1224, 1027), (1223, 1024),
+             (1223, 1021), (1224, 1018), (1225, 1015), (1227, 1013), (1230, 1011), (1233, 1010), (1236, 1010)]
+    try:
+        for i in range(len(sizes)):
+            if sum(pg.pixel(*sizes[i])) // 3 < 155:
+                return sizes[i - 2]
+    except Exception as ex:
+        print(ex)
+        return check_size()
+    else:
+        return sizes[-2]
+
+
+def overheating():
+    return pg.pixel(1258, 1022)[0] >= 200 >= sum(pg.pixel(1258, 1022)[1:])
+
+
+def low_line():
+    return pg.pixel(1223, 1024)[0] >= 200 >= sum(pg.pixel(1241, 1028)[1:])
+
+
+def hooked():
+    try:
+        if (pix := pg.pixel(1305, 1037))[0] >= 200 >= sum(pix[1:]):
+            print('zatsep')
+            return True
+    except Exception as ex:
+        return hooked()
+    return False
+
+
+def full():
+    try:
+        return pg.pixel(329, 239)[0] >= 120
+    except Exception as ex:
+        return full()
+
+
+# FUNCTIONS ------------------------------------------------------------------------------------------------------------
 def send_screenshot():
     try:
         pg.screenshot('screen.png')
         with open('screen.png', 'rb') as img:
-            bot.send_photo(id, img)
+            bot.send_photo(tg_id, img)
     except Exception as ex:
         send_screenshot()
 
@@ -36,18 +172,18 @@ def send_screenshot():
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
     try:
-        global check_fishes, first
-        print('\ntelegram message from {}\n'.format(message.from_user.id))
-        if message.from_user.id == id:
+        global check_fishes, first_message
+        print('\ntelegram message from {}\n'.format(message.from_user.tg_id))
+        if message.from_user.tg_id == tg_id:
             print(msg := message.text.lower().split())
             match msg:
                 case 'садок', *words:
                     check_fishes = True
-                    bot.send_message(id, 'wait...')
+                    bot.send_message(tg_id, 'wait...')
                 case 'скрин', *words:
                     send_screenshot()
                 case 'выход', *words:
-                    if not first:
+                    if not first_message:
                         close_game()
                 case 'нажми', btn:
                     pg.press(btn)
@@ -56,41 +192,22 @@ def get_text_messages(message):
                 case 'отпусти', btn:
                     pg.keyUp(btn)
                 case 'выполни', *words:
-                    exec(''.join(words))
+                    exec(' '.join(words))
                 case 'help', *words:
-                    bot.send_message(id, 'садок\nскрин\nвыход\nнажми\nзажми\nотпусти\nвыполни')
+                    bot.send_message(tg_id, 'садок\nскрин\nвыход\nнажми\nзажми\nотпусти\nвыполни')
                 case _:
-                    bot.send_message(id, 'привет ^_^')
-            first = False
+                    bot.send_message(tg_id, 'привет ^_^')
+            first_message = False
     except Exception as ex:
-        bot.send_message(id, str(ex))
+        bot.send_message(tg_id, str(ex))
 
 
 def polling():
     try:
         bot.polling(none_stop=True, interval=1)
     except Exception as ex:
+        t.sleep(1.5)
         polling()
-
-
-def is_ready():
-    try:
-        return pg.locateOnScreen('images/is_ready.png', confidence=0.8) is not None
-    except Exception as ex:
-        return is_ready()
-
-
-def need_energy():
-    global energy
-    if not is_eat:
-        energy = False
-    try:
-        if pg.pixel(280, 955)[1] <= 115:
-            return True
-    except Exception as ex:
-        return need_energy()
-    else:
-        return False
 
 
 def change_friction(change):
@@ -103,31 +220,25 @@ def change_friction(change):
         t.sleep(0.035)
 
 
-def is_fish():
-    pg.press('r')
-    t.sleep(0.25)
-    try:
-        return pg.locateOnScreen('images/fish.png', confidence=0.65) is not None
-    except Exception as ex:
-        return is_fish()
-
-
 def normalize_friction():
-    global last_friction_up
+    global last_friction_change, friction
     try:
         while pg.pixel(1320, 1050)[0] >= 175 and pg.pixel(597, 1050)[0] >= 175:
             change_friction(-1)
         if sum(pg.pixel(1266, 1050)[:2]) / 2 <= 155 and sum(pg.pixel(650, 1050)[:2]) / 2 <= 155:
-            if friction + 1 < max_friction and t.time() - last_friction_up > 5:
+            if friction + 1 < 30 and t.time() - last_friction_change > 4:
                 change_friction(1)
-                last_friction_up = t.time()
+                if full_friction():
+                    friction = 30
+                    change_friction(-1)
+        last_friction_change = t.time()
     except Exception as ex:
         normalize_friction()
 
 
 def set_friction(value):
     global friction
-    friction = -10
+    friction = 0
     change_friction(30)
     change_friction(value - 30)
     friction = value
@@ -147,61 +258,22 @@ def set_speed(value):
     pg.keyUp('r')
 
 
-def is_done():
-    try:
-        return pg.locateOnScreen('images/done.png', confidence=0.8) is not None
-    except Exception as ex:
-        return is_done()
-
-
 def eat():
-    global is_eat
-    if is_eat:
-        pg.press('5')
+    global alive
+    pg.press('5')
     try:
         if pg.locateOnScreen('images/eatover.png', confidence=0.85) is not None:
-            is_eat = False
+            alive = False
     except Exception as ex:
         eat()
 
 
-def check_crash():
-    try:
-        return pg.locateOnScreen('images/crash.png', confidence=0.8) is not None
-    except Exception as ex:
-        return check_crash()
-
-
-def is_near():
-    try:
-        return sum(pg.pixel(*default_size)) // 3 >= 155
-    except Exception as ex:
-        print(ex)
-        return is_near()
-
-
-def check_size():
-    sizes = [(1237, 1010), (1240, 1010), (1243, 1011), (1246, 1013), (1248, 1016), (1250, 1019), (1250, 1022),
-             (1250, 1025), (1249, 1028), (1248, 1031), (1246, 1033), (1244, 1035), (1241, 1036), (1238, 1036),
-             (1235, 1036), (1232, 1036), (1229, 1035), (1227, 1033), (1225, 1030), (1224, 1027), (1223, 1024),
-             (1223, 1021), (1224, 1018), (1225, 1015), (1227, 1013), (1230, 1011), (1233, 1010), (1236, 1010)]
-    try:
-        for i in range(len(sizes)):
-            if sum(pg.pixel(*sizes[i])) // 3 < 155:
-                return sizes[i - 2]
-    except Exception as ex:
-        print(ex)
-        return check_size()
-    else:
-        return sizes[-2]
-
-
 def close_game():
+    os.system('taskkill /F /IM rf4_x64.exe')
     print_and_log('Выключение игры...')
     pg.mouseUp()
     pg.mouseUp(button='right')
     pg.keyUp('shift')
-    os.system('taskkill /F /IM rf4_x64.exe')
     close_bot()
 
 
@@ -209,140 +281,48 @@ def close_bot():
     locker.acquire()
     print_and_log('Выключение бота...')
     log.close()
-    if id is not None:
-        bot.send_message(id, 'Выключение бота...')
+    if tg_id is not None:
+        bot.send_message(tg_id, 'Выключение бота...')
         try:
-            bot.send_document(id, open(log_path, 'rb'))
+            bot.send_document(tg_id, open(log_path, 'rb'))
         except Exception as ex:
-            bot.send_message(id, "Не удалось отправить лог:\n" + str(ex))
+            bot.send_message(tg_id, "Не удалось отправить лог:\n" + str(ex))
     os.system('taskkill /F /IM python.exe')
     exit()
 
 
-def hot():
-    return pg.pixel(1258, 1022)[0] >= 200 and sum(pg.pixel(1258, 1022)[1:]) <= 200
-
-
-def lowline():
-    return pg.pixel(1223, 1024)[0] >= 200 and sum(pg.pixel(1241, 1028)[1:]) <= 200
-
-
-def zatsep():
-    try:
-        if (pix := pg.pixel(1305, 1037))[0] >= 200 and sum(pix[1:]) <= 200:
-            print('zatsep')
-            return True
-    except Exception as ex:
-        return zatsep()
-    return False
-
-
-def full():
-    try:
-        return pg.pixel(329, 239)[0] >= 120
-    except Exception as ex:
-        return full()
-
-
 def print_and_log(value):
     global log
+    time = t.time() - starts_time
     print(
-        f'{value} : [{round(t.time() - starts_time) // 3600}:{round(t.time() - starts_time) % 3600 // 60}:{round(t.time() - starts_time) % 60}]')
+        f'{value} : [{round(time) // 3600}:{round(time) % 3600 // 60}:{round(time) % 60}]')
     log.write(
-        f'{value} : [{round(t.time() - starts_time) // 3600}:{round(t.time() - starts_time) % 3600 // 60}:{round(t.time() - starts_time) % 60}]\n')
+        f'{value} : [{round(time) // 3600}:{round(time) % 3600 // 60}:{round(time) % 60}]\n')
 
 
-starts_time = t.time()
-last_friction_up = starts_time
-
-locker = td.Lock()
-
-try:
-    id = int(TELEGRAM_ID)
-except ValueError:
-    id = None
-
-# HOTKEYS
-kb.add_hotkey(EXIT_HOTKEY, close_bot)
-
-# LOGS
-path = os.path.dirname(os.path.abspath(__file__))
-print('cd ' + path)
-print('python bot.py')
-if 'logs' not in os.listdir(path=path):
-    os.mkdir('/logs')
-log_path = path + '/logs/log_{}.txt'.format('-'.join(t.ctime().replace(':', '-').split()[-2:]))
-log = open(log_path, 'w')
-
-# EXIT TIMER
-timer = pg.prompt(text='Через сколько часов выключить бота и игру?', title='Таймер', default=None)
-if timer is not None and timer.isdigit():
-    timer = True
-    end_time = t.time() + float(timer) * 3600
-else:
-    timer = False
-
-speed = int(pg.prompt(text='Какая скорость промотки?', title='Скорость', default=50))
-def_fr = int(pg.prompt(text='Какой стандартный фрикцион?', title='Фрикцион', default=25))
-max_friction = int(pg.prompt(text='Какой предельный фрикцион?', title='Фрикцион', default=30))
-mode = pg.confirm(text='Какой тип проводки?', title='Тип проводки',
-                  buttons=['Твичинг', 'Джиговая ступенька', 'Рыскание', 'Пассивные Вэки', 'Равномерная'])
-
-if id is None:
-    pg.alert("Введите свой телеграм ID для дистанционного управления в файл 'config.py'", title='Телеграм ID')
-    exit()
-
-for char in 'starting...':
-    print(char, end='', flush=True)
-t.sleep(0.1)
-
-is_eat = True
-energy = True
-check_fishes = False
-first = True
-friction = 25
-is_zatsep = False
-is_fish_now = False
-
-td.Thread(target=polling, name='polling').start()
-
-print_and_log("\nstarted successfully")
-
-t.sleep(5)
-set_speed(speed)
-
-default_size = check_size()
-
-while energy:
-    print_and_log('LOOP')
-
-    t.sleep(0.5)
-
-    pg.press('shift')
-    pg.mouseUp(button='right')
-    pg.mouseUp()
-
-    while is_done():
+def accept_fish():
+    while done():
         print_and_log('ACCEPTING')
-        if not FISH_FILTER or pg.locateOnScreen('images/trophy.png', confidence=0.8) is not None or pg.locateOnScreen(
-                'images/nice.png', confidence=0.8) is not None or pg.locateOnScreen('images/rare.png',
-                                                                                    confidence=0.8) is not None:
-            if pg.locateOnScreen('images/trophy.png', confidence=0.8) is not None or pg.locateOnScreen(
-                    'images/rare.png', confidence=0.8) is not None:
-                send_screenshot()
+        marked = pg.locateOnScreen('images/marked.png', confidence=0.8) is not None
+        trophy = pg.locateOnScreen('images/trophy.png', confidence=0.8) is not None
+        rare_trophy = pg.locateOnScreen('images/rare_trophy.png', confidence=0.8) is not None
+        if trophy or rare_trophy:
+            send_screenshot()
+        if not FISH_FILTER or any([marked, trophy, rare_trophy]):
             pg.press(' ')
         else:
             pg.press('backspace')
         t.sleep(0.75)
 
-    if timer and t.time() > end_time:
-        close_game()
+
+def check_sadok():
+    global check_fishes
 
     t.sleep(0.5)
 
     pg.press('c', interval=0.1)
 
-    t.sleep(1.5)
+    t.sleep(0.75)
     if pg.locateOnScreen('images/sadok.png') is not None:
         if full():
             print_and_log('FULL')
@@ -350,7 +330,7 @@ while energy:
     else:
         t.sleep(3)
         if pg.locateOnScreen('images/sadok.png') is None:
-            continue
+            check_sadok()
         elif full():
             print_and_log('FULL')
             close_game()
@@ -361,54 +341,118 @@ while energy:
 
     pg.press('c', interval=0.1)
 
-    t.sleep(1.5)
+    t.sleep(0.75)
 
-    if is_ready():
-        set_friction(def_fr)
-        max_friction = 30
-        t.sleep(0.25)
-        print_and_log('THROWING')
-        pg.keyDown('shift')
-        pg.mouseDown()
-        t.sleep(1)
-        pg.mouseUp()
-        pg.keyUp('shift')
-        t.sleep(5)
+
+def cast():
+    t.sleep(0.25)
+    print_and_log('THROWING')
+    pg.keyDown('shift')
+    pg.mouseDown()
+    t.sleep(1)
+    pg.mouseUp()
+    pg.keyUp('shift')
+    t.sleep(random.uniform(3, 5))
+
+
+def rise():
+    pg.keyDown('shift')
+    pg.mouseDown()
+    t.sleep(TIME_RISE)
+    pg.mouseUp()
+    pg.keyUp('shift')
+
+
+def twitch():
+    pg.keyDown('shift')
+    pg.mouseDown()
+    t.sleep(TIME_TWEETING)
+    pg.click(button='right')
+    pg.mouseUp()
+    pg.keyUp('shift')
+
+
+def jigging():
+    pg.mouseDown()
+    t.sleep(TIME_JUMPING)
+    pg.mouseUp()
+
+
+def fishing(func, time_between=0):
+    global last_rise
+    if t.time() - last_rise > time_between:
+        func()
+        last_rise = t.time()
+
+
+# HOTKEYS --------------------------------------------------------------------------------------------------------------
+kb.add_hotkey(EXIT_HOTKEY, close_bot)
+
+# LOGS -----------------------------------------------------------------------------------------------------------------
+path = os.path.dirname(os.path.abspath(__file__))
+print('cd ' + path)
+print('python bot.py')
+if 'logs' not in os.listdir(path=path):
+    os.mkdir('/logs')
+log_path = path + '/logs/log_{}.txt'.format('-'.join(t.ctime().replace(':', '-').split()[-2:]))
+log = open(log_path, 'w')
+
+print_and_log("\nstarted successfully")
+
+td.Thread(target=polling, name='polling').start()
+
+# START ----------------------------------------------------------------------------------------------------------------
+t.sleep(5)
+set_speed(speed)
+
+default_size = check_size()
+
+while alive:
+    print_and_log('LOOP')
+
+    t.sleep(0.5)
+
+    pg.press('shift')
+    pg.mouseUp(button='right')
+    pg.mouseUp()
+
+    if crash():
+        print_and_log('CRASHED')
+        close_game()
+
+    if done():
+        accept_fish()
+
+    if timer and t.time() > end_time:
+        close_game()
+
+    check_sadok()
+
+    if ready():
+        change_friction(default_friction - friction)
+        cast()
     else:
         continue
 
     time1 = t.time()
     is_pressed = False
-    while not (is_fish_now := is_fish()) and not is_ready() and not is_done():
+    while not (is_fish_now := fish()) and not ready() and not done():
         print_and_log(mode)
 
-        while zatsep():
+        while hooked():
             pg.mouseDown()
             pg.click(button='right')
             t.sleep(0.5)
 
         match mode:
             case 'Рыскание':
-                pg.keyDown('shift')
-                pg.mouseDown()
-                t.sleep(TIME_RISE)
-                pg.mouseUp()
-                pg.keyUp('shift')
+                fishing(rise)
 
             case 'Твичинг':
-                t.sleep(TIME_BETWEEN_TWEETING)
-                pg.keyDown('shift')
-                pg.mouseDown()
-                t.sleep(TIME_TWEETING)
-                pg.click(button='right')
-                pg.mouseUp()
-                pg.keyUp('shift')
+                fishing(twitch, TIME_BETWEEN_TWEETING)
 
             case 'Джиговая ступенька':
-                t.sleep(TIME_BETWEEN_TWEETING)
-                pg.mouseDown()
-                t.sleep(TIME_JUMPING)
-                pg.mouseUp()
+                fishing(jigging, TIME_BETWEEN_JUMPING)
 
             case 'Равномерная':
                 if not is_pressed:
@@ -424,38 +468,42 @@ while energy:
             pg.mouseDown()
             pg.keyDown('shift')
             t.sleep(0.05)
-            while not is_done() and not is_ready():
+            while not done() and not ready() and not crash():
                 normalize_friction()
-                if lowline() or check_crash():
-                    t.sleep(1)
-                    if lowline() or check_crash():
-                        t.sleep(1)
-                        if (low := lowline()) or (crash := check_crash()):
-                            send_screenshot()
-                            if low:
-                                print_and_log('LOW!')
-                            else:
-                                print_and_log('CRASH!')
+                if low_line():
+                    t.sleep(0.75)
+                    if low_line():
+                        send_screenshot()
+                        print_and_log('LOW LINE')
                         close_game()
-                if hot():
-                    print_and_log('HOT!')
+
+                if overheating():
+                    print_and_log('OVERHEAT!')
                     pg.mouseUp()
                     t.sleep(0.2)
                     pg.keyDown('enter')
-                    while hot():
+                    while overheating() and not low_line():
                         t.sleep(0.1)
+                    if low_line():
+                        send_screenshot()
+                        print_and_log('LOW LINE')
+                        close_game()
                     pg.keyUp('enter')
                     pg.mouseDown()
-                if is_near():
+
+                if near():
                     pg.mouseDown(button='right')
                 else:
                     pg.mouseUp(button='right')
+
                 if need_energy():
                     eat()
-                while zatsep():
+
+                while hooked():
                     pg.mouseUp(button='right')
                     pg.click(button='right')
                     t.sleep(0.5)
+
                 t.sleep(0.05)
 
 else:
